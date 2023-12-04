@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim import Adam
 
 from sklearn.metrics import (accuracy_score, recall_score, 
                              precision_score, f1_score, roc_auc_score)
@@ -51,11 +52,7 @@ if __name__ == '__main__':
         type=str,
         help='The name of the experiment for tensorboard logging.',
     )
-    parser.add_argument(
-        '--task', 
-        type=str,
-        help='Either of `train`, `val`, `test` or `predict`.',
-    )
+
     args = parser.parse_args()
 
 
@@ -66,16 +63,19 @@ if __name__ == '__main__':
         num_workers=NUM_WORKERS
     )
 
-    _early_stop = EarlyStopping(patience=5, monitor='val_accuracy', mode='max')
-    _tensorboard = TensorBoard(log_dir=TB_LOG_DIR)
-    _model_checkpoint = ModelCheckpoint(save_path=f'{CKPT_DIR}/best.pt', monitor='val_accuracy', mode='max')
-    _scheduler = ReduceLROnPlateau(optimizer, mode='min', patience=5, factor=0.1, verbose=True)
+
 
     MODEL = Network(
         base_model=get_base_model(args.base_model_name),
         dropout=args.dropout,
         output_dims=args.output_dims
     )
+
+    _optimizer = Adam(MODEL.parameters(), lr=args.lr)
+    _scheduler = ReduceLROnPlateau(_optimizer, mode='min', patience=5, factor=0.1, verbose=True) #TODO set the monitor
+    _early_stop = EarlyStopping(patience=5, monitor='val_accuracy', mode='max')
+    _tensorboard = TensorBoard(log_dir=f'{TB_LOG_DIR}/{args.trail_name}')
+    _model_checkpoint = ModelCheckpoint(save_path=f'{CKPT_DIR}/{args.trail_name}.pt', monitor='val_accuracy', mode='max')
 
     trainer = Trainer(
             model=MODEL,
@@ -87,8 +87,10 @@ if __name__ == '__main__':
             early_stop = _early_stop,
             model_checkpoint = _model_checkpoint,
             tensorboard = _tensorboard,
-            optimizer = Adam,
+            optimizer = _optimizer,
     )
     
     trainer.fit(train_dataloader, val_dataloader)
 
+
+# python train.py --base_model_name efficientnet_b0 --dropout 0.5 --output_dims 128 64 32 --lr 0.001 --trail_name best

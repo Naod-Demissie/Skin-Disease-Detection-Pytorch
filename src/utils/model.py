@@ -6,7 +6,7 @@ from typing import List
 import torch.nn.functional as F
 
 sys.path.append('..')
-from src.config import *
+from .config import *
 
 
 class Network(nn.Module):

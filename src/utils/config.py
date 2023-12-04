@@ -25,14 +25,9 @@ TB_LOG_DIR = '../logs/tensorboard/'
 CKPT_DIR = '../checkpoints/'
 
 # Compute related
-NUM_WORKERS = 4
-ACCELERATOR = 'gpu' if torch.cuda.is_available() else 'cpu'
+NUM_WORKERS = 2
 DEVICES = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-PRECISION = 'bf16-mixed' #16
-
-#TODO: figure out what this does
-PERCENT_VALID_EXAMPLES = 0.2
 
 # For base model search
 RESIZE_SIZE = {
