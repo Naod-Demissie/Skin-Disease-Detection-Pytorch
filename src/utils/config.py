@@ -12,19 +12,17 @@ from torchvision.models import (resnet18, ResNet18_Weights,
 
 # Hyperparameters
 NUM_CLASSES = 3
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0001
 BATCH_SIZE = 8
 # BATCH_SIZE = 32
 NUM_EPOCHS = 50
 
 # Paths
-# ROOT_DIR = os.path.abspath('..')
-# DATA_DIR = "../data/raw/"
-ROOT_DIR = os.getcwd()
-LOCAL_DATA_DIR = 'D:/Projects/Skin Disease Detection/Dataset/LatestDataset'
-DERMNET_DATA_DIR = 'D:/Datasets/Skin-Disease-Detection/dataset/Dermnet'
-TB_LOG_DIR = '../logs/tensorboard/'
-CKPT_DIR = '../checkpoints/'
+ROOT_DIR = '/home/rdadmin/Documents/Naod-Projects/Skin-Disease-Detection-Pytorch'
+LOCAL_DATA_DIR = '/home/rdadmin/Documents/Naod-Projects/Skin-Disease-Detection/dataset'
+DERMNET_DATA_DIR = '/home/rdadmin/Documents/Datasets/Dermnet'
+TB_LOG_DIR = f'{ROOT_DIR}/logs/tensorboard/'
+CKPT_DIR = f'{ROOT_DIR}/checkpoints/'
 
 
 DERMNET_LABEL_NAME = os.listdir(f'{DERMNET_DATA_DIR}/train')
