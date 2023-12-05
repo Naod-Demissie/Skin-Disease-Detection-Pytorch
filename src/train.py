@@ -7,12 +7,12 @@ from torch.optim import Adam
 from sklearn.metrics import (accuracy_score, recall_score, 
                              precision_score, f1_score, roc_auc_score)
 
-sys.path.append('..')
-from .utils.config import *
-from .utils.dataloader import prepare_data
-from .utils.model import Network
-from .utils.callbacks import *
-from .utils.trainer import Trainer
+# sys.path.append('..')
+from utils.config import *
+from utils.dataloader import prepare_data
+from utils.model import Network
+from utils.callbacks import *
+from utils.trainer import Trainer
 
 
 if __name__ == '__main__':

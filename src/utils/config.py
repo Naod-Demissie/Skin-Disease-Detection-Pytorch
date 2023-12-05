@@ -13,16 +13,21 @@ from torchvision.models import (resnet18, ResNet18_Weights,
 # Hyperparameters
 NUM_CLASSES = 3
 LEARNING_RATE = 0.001
-BATCH_SIZE = 32
+BATCH_SIZE = 8
+# BATCH_SIZE = 32
 NUM_EPOCHS = 50
 
 # Paths
 # ROOT_DIR = os.path.abspath('..')
 # DATA_DIR = "../data/raw/"
 ROOT_DIR = os.getcwd()
-DATA_DIR = 'D:/Projects/Skin Disease Detection/Dataset/LatestDataset'
+LOCAL_DATA_DIR = 'D:/Projects/Skin Disease Detection/Dataset/LatestDataset'
+DERMNET_DATA_DIR = 'D:/Datasets/Skin-Disease-Detection/dataset/Dermnet'
 TB_LOG_DIR = '../logs/tensorboard/'
 CKPT_DIR = '../checkpoints/'
+
+
+DERMNET_LABEL_NAME = os.listdir(f'{DERMNET_DATA_DIR}/train')
 
 # Compute related
 NUM_WORKERS = 2

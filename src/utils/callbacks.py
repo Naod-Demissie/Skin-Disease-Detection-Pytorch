@@ -3,7 +3,6 @@ from torch.utils.tensorboard import SummaryWriter
 import os
 
 
-
 class ModelCheckpoint:
     def __init__(self, save_path, monitor='val_loss', mode='min', min_delta=0.0001):
         self.save_path = save_path
