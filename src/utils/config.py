@@ -13,8 +13,7 @@ from torchvision.models import (resnet18, ResNet18_Weights,
 # Hyperparameters
 NUM_CLASSES = 3
 LEARNING_RATE = 0.0001
-BATCH_SIZE = 8
-# BATCH_SIZE = 32
+BATCH_SIZE = 16
 NUM_EPOCHS = 50
 
 # Paths
@@ -34,8 +33,8 @@ DEVICES = torch.device('cuda') if torch.cuda.is_available() else torch.device('c
 
 # For base model search
 RESIZE_SIZE = {
-    'resnet18': {256, 256, 3},
-    'resnet50': {256, 256, 3},
+    'resnet18': (256, 256, 3),
+    'resnet50': (256, 256, 3),
     'efficientnet_b0': (256, 256, 3), 
     'efficientnet_b1': (255, 255, 3), 
     'efficientnet_b2': (288, 288, 3), 
@@ -46,8 +45,8 @@ RESIZE_SIZE = {
 }
 
 CROP_SIZE = {
-    'resnet18': {224, 224, 3},
-    'resnet50': {224, 224, 3},
+    'resnet18': (224, 224, 3),
+    'resnet50': (224, 224, 3),
     'efficientnet_b0': (224, 224, 3), 
     'efficientnet_b1': (240, 240, 3), 
     'efficientnet_b2': (288, 288, 3), 

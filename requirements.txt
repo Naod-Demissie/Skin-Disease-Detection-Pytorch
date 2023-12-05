@@ -1,5 +1,9 @@
 tqdm
+pandas
 torch
 torchvision
 scikit-learn
 opencv-python
+tensorboard
+ipywidgets
+ipykernel

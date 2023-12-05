@@ -15,12 +15,11 @@ from .config import *
 
 class Trainer:
     def __init__(
-        *,
         self,
         model: torch.nn.Module,
         device: torch.device,
         num_epoch: int,
-        metrics: List[sklearn.metrics],
+        metrics: List,
         optimizer: torch.optim,
         loss_fn: torch.nn.Module = torch.nn.CrossEntropyLoss(),
         early_stop: Optional[EarlyStopping] = None,
@@ -34,7 +33,7 @@ class Trainer:
         self.metrics = metrics
         self.loss_fn = loss_fn
         self.num_epoch = num_epoch
-        self.optimizer = optimizer(self.model.parameters(), lr=LEARNING_RATE)
+        self.optimizer = optimizer
         self.early_stop = early_stop
         self.model_checkpoint = model_checkpoint
         self.tensorboard = tensorboard
@@ -132,10 +131,10 @@ class Trainer:
                             zero_division=0
                         )
 
-                current_metrics[metric_name] = round(metric_value, 4)
-                running_metrics[metric_name] += metric_value
+                    current_metrics[metric_name] = round(metric_value, 4)
+                    running_metrics[metric_name] += metric_value
 
-                progress_bar.set_postfix(val_loss=loss.item(), **running_metrics)
+                progress_bar.set_postfix(val_loss=loss.item(), **current_metrics)
                 progress_bar.update()
 
         val_loss /= len(dataloader)
@@ -150,15 +149,29 @@ class Trainer:
             val_logs = self._validate_step(dataloader=val_loader,epoch=epoch)
 
             checkpoint_monitor = self.model_checkpoint.monitor
-            self.model_checkpoint(epoch, self.model, self.optimizer, metrics=val_logs[checkpoint_monitor])
+            self.model_checkpoint(
+                epoch, 
+                self.model, 
+                self.optimizer, 
+                metrics=val_logs[checkpoint_monitor],
+                state_dict={
+                    'optimizer': self.optimizer.state_dict(),
+                    'learning_rate': self.optimizer.param_groups[0]['lr'],
+                    'scheduler': self.scheduler.state_dict() if self.scheduler else None,
+                    'current_epoch': epoch,
+                    **train_logs,
+                    **val_logs
+                }
+            )
+
+            self.scheduler.step(metrics=val_logs[checkpoint_monitor], epoch=epoch) if self.scheduler else None
 
             if self.tensorboard:
                 for log_name, log_value in train_logs.items():
                     self.tensorboard(log_name, log_value, epoch)
                 for log_name, log_value in val_logs.items():
                     self.tensorboard(log_name, log_value, epoch)
-            # if self.scheduler.step():
-            #     pass #TODO implement this step
+                self.tensorboard('learning_rate', self.optimizer.param_groups[0]['lr'], epoch)
 
             earlystop_monitor = self.early_stop.monitor
             if self.early_stop(val_logs[earlystop_monitor]):

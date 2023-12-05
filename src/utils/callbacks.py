@@ -13,7 +13,7 @@ class ModelCheckpoint:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
 
-    def __call__(self, epoch, model, optimizer, metrics):
+    def __call__(self, epoch, model, optimizer, metrics, state_dict):
         current_value = metrics
         if (self.mode == 'min' and (current_value-self.min_delta) < self.best_value) or \
            (self.mode == 'max' and (current_value+self.min_delta) > self.best_value):
@@ -23,7 +23,7 @@ class ModelCheckpoint:
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'metrics': metrics
+                **state_dict
             }, self.save_path)
 
 
