@@ -1,11 +1,7 @@
-import os
-import sys
 import torch
-from torch import nn, optim
+from torch import nn
 from typing import List
-import torch.nn.functional as F
 
-# sys.path.append('..')
 from .config import *
 
 class Network(nn.Module):

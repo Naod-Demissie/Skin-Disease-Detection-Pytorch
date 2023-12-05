@@ -1,10 +1,7 @@
 import os
-import sys
 import cv2
 import pandas as pd
 from glob import glob
-from PIL import Image
-from enum import Enum
 from typing import Optional, Tuple, List
 from sklearn.model_selection import GroupShuffleSplit, train_test_split
 
@@ -13,8 +10,6 @@ import torch.nn.functional as F
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 
-
-# sys.path.append('..')
 from .config import *
 
 
@@ -115,8 +110,6 @@ def prepare_local_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     df['label_name'] = df['label_name'].apply(lambda x: x.lower())
     df['sparse_label'] = df['label_name'].map({'atopic': 0, 'papular': 1,'scabies': 2})
 
-    df = df.loc[:100, :]#TODO delete this when done
-
     gs = GroupShuffleSplit(n_splits=2, train_size=.85, random_state=42)
     train_val_idx, test_idx = next(gs.split(df,groups=df.patient_id))
     train_val_df = df.iloc[train_val_idx]
@@ -193,7 +186,6 @@ def local_dataloader(
         pin_memory=True
     )
     return train_dataloader, val_dataloader, test_dataloader
-
 
 
 def dermnet_dataloader(

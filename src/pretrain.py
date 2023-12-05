@@ -56,6 +56,7 @@ for base_model_name in base_model_names:
         model_checkpoint = _model_checkpoint,
         tensorboard = _tensorboard,
         optimizer = _optimizer,
+        scheduler= _scheduler
     )
     
     trainer.fit(train_dataloader, val_dataloader)
