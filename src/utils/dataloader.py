@@ -15,7 +15,7 @@ from torch.utils.data import Dataset, DataLoader
 
 
 # sys.path.append('..')
-from utils.config import *
+from .config import *
 
 
 
@@ -61,23 +61,54 @@ class DermnetDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        image_path, label = self.data[index]
-        image = Image.open(image_path)
+        img_path, label = self.data[index]
+        img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
+
         label = torch.tensor(label)
         label = F.one_hot(label, num_classes=len(DERMNET_LABEL_NAME)).float()
         
         if self.transform:
-            image = self.transform(image)
-        return image, label
+            img = self.transform(img)
+        return img, label
 
 
-def prepare_local_data(
-        resize_size: Tuple[int, int, int], 
-        crop_size: Tuple[int, int, int], 
-        batch_size: int, 
-        num_workers: int
-) -> Tuple[DataLoader, DataLoader, DataLoader]:
+
+def _transforms(resize_size, crop_size):
+    train_transform = transforms.Compose(
+            [
+                transforms.ToPILImage(),
+                transforms.Resize(resize_size[:-1]),
+                transforms.CenterCrop(crop_size[:-1]),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            ]
+        )
+    val_transform = transforms.Compose(
+            [
+                transforms.ToPILImage(),
+                transforms.Resize(resize_size[:-1]),
+                transforms.CenterCrop(crop_size[:-1]),
+                transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            ]
+        )
     
+    test_transform= transforms.Compose(
+            [
+                transforms.ToPILImage(),
+                transforms.Resize(resize_size[:-1]),
+                transforms.CenterCrop(crop_size[:-1]),
+                transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            ]
+        )
+    return train_transform, val_transform, test_transform
+    
+
+
+def prepare_local_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     df = pd.read_csv(f'{LOCAL_DATA_DIR}/verified_annotation_from_xml.csv')
     df['img_path'] =f'{LOCAL_DATA_DIR}/images/' + df['image_name']
     df.drop(columns=['Unnamed: 0'], inplace=True)
@@ -98,38 +129,38 @@ def prepare_local_data(
     train_df.reset_index(drop=True, inplace=True)
     val_df.reset_index(drop=True, inplace=True)
     test_df.reset_index(drop=True, inplace=True)
+    return train_df, val_df, test_df
 
 
-    train_transform = transforms.Compose(
-        [
-            transforms.ToPILImage(),
-            transforms.Resize(resize_size[:-1]),
-            transforms.CenterCrop(crop_size[:-1]),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomVerticalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        ]
-    )
-    val_transform = transforms.Compose(
-        [
-            transforms.ToPILImage(),
-            transforms.Resize(resize_size[:-1]),
-            transforms.CenterCrop(crop_size[:-1]),
-            transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        ]
-    )
+def prepare_dermnet_data() -> Tuple[List, List, List]:
+    label_names = os.listdir(f'{DERMNET_DATA_DIR}/train')
+    train_data = []
+    val_data = []
+    for label in label_names:
+        file_paths = glob(f'{DERMNET_DATA_DIR}/train/{label}/*')
+        train_paths, val_paths = train_test_split(file_paths, test_size=0.2, random_state=42)
+        sparse_label = label_names.index(label)
+        train_data += [(path, sparse_label) for path in train_paths]
+        val_data += [(path, sparse_label) for path in val_paths]
+
+    test_data = []
+    for label in label_names:
+        file_paths = glob(f'{DERMNET_DATA_DIR}/test/{label}/*')
+        sparse_label = label_names.index(label)
+        test_data += [(path, sparse_label) for path in file_paths]
+
+    return train_data, val_data, test_data
+
+
+def local_dataloader(
+        resize_size: Tuple[int, int, int], 
+        crop_size: Tuple[int, int, int], 
+        batch_size: int, 
+        num_workers: int
+) -> Tuple[DataLoader, DataLoader, DataLoader]:
     
-    test_transform= transforms.Compose(
-        [
-            transforms.ToPILImage(),
-            transforms.Resize(resize_size[:-1]),
-            transforms.CenterCrop(crop_size[:-1]),
-            transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        ]
-    )
+    train_df, val_df, test_df = prepare_local_data()
+    train_transform, val_transform, test_transform = _transforms(resize_size[:-1], crop_size[:-1])
 
     train_ds = LocalDataset(df=train_df, transform=train_transform)
     val_ds = LocalDataset(df=val_df, transform=val_transform)
@@ -161,64 +192,20 @@ def prepare_local_data(
         persistent_workers=True,
         pin_memory=True
     )
-
     return train_dataloader, val_dataloader, test_dataloader
 
 
 
-
-def prepare_dermnet_data(
+def dermnet_dataloader(
         resize_size: Tuple[int, int, int], 
         crop_size: Tuple[int, int, int], 
         batch_size: int, 
         num_workers: int
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
     
-    DERMNET_DATA_DIR = 'D:/Datasets/Skin-Disease-Detection/dataset/Dermnet'
-    label_names = os.listdir(f'{DERMNET_DATA_DIR}/train')
-    train_data = []
-    val_data = []
-    for label in label_names:
-        file_paths = glob(f'{DERMNET_DATA_DIR}/train/{label}/*')
-        train_paths, val_paths = train_test_split(file_paths, test_size=0.2, random_state=42)
 
-        sparse_label = label_names.index(label)
-        train_data += [(path, sparse_label) for path in train_paths]
-        val_data += [(path, sparse_label) for path in val_paths]
-
-    test_data = []
-    for label in label_names:
-        file_paths = glob(f'{DERMNET_DATA_DIR}/test/{label}/*')
-        sparse_label = label_names.index(label)
-        test_data += [(path, sparse_label) for path in file_paths]
-
-    train_transform = transforms.Compose(
-        [
-            transforms.Resize(resize_size[:-1]),
-            transforms.CenterCrop(crop_size[:-1]),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomVerticalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        ]
-    )
-    val_transform = transforms.Compose(
-        [
-            transforms.Resize(resize_size[:-1]),
-            transforms.CenterCrop(crop_size[:-1]),
-            transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        ]
-    )
-    
-    test_transform= transforms.Compose(
-        [
-            transforms.Resize(resize_size[:-1]),
-            transforms.CenterCrop(crop_size[:-1]),
-            transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        ]
-    )
+    train_data, val_data, test_data = prepare_dermnet_data()
+    train_transform, val_transform, test_transform = _transforms(resize_size[:-1], crop_size[:-1])
 
 
     train_ds = DermnetDataset(data=train_data, transform=train_transform)
@@ -251,5 +238,4 @@ def prepare_dermnet_data(
         persistent_workers=True,
         pin_memory=True
     )
-
     return train_dataloader, val_dataloader, test_dataloader
